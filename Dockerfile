@@ -22,5 +22,5 @@ RUN envsubst < /usr/local/signaturepdf/config/php.ini > /usr/local/etc/php/conf.
          a2enmod rewrite && a2ensite signaturepdf
 
 WORKDIR /usr/local/signaturepdf
-
+RUN rm -r /var/www/html && ln -s /usr/local/signaturepdf/public/ /var/www/html
 CMD /usr/local/signaturepdf/entrypoint.sh

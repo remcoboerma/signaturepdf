@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  signaturepdf:
+    build: . 
+    environment:
+      # Deployment URL (default: localhost)
+      SERVERNAME: "localhost" # e.g., pdf.24eme.fr
+
+      # Maximum size of the PDF file to sign (default: 24M)
+      UPLOAD_MAX_FILESIZE: "24M" # e.g., 48M
+
+      # Maximum size of the POST body (default: 24M)
+      POST_MAX_SIZE: "24M" # e.g., 48M
+
+      # Maximum number of pages in the PDF (default: 201)
+      MAX_FILE_UPLOADS: "201" # e.g., 401
+
+      # Where to store uploaded PDFs (default: /data)
+      PDF_STORAGE_PATH: "/data" # Change as needed
+
+      # Disable the Organize route? (default: false)
+      DISABLE_ORGANIZATION: "false" # Set to "true" to disable
+
+      # Show/hide/change demo PDF link (default: true)
+      # Set to "false" to hide, URL or relative path to provide another file
+      PDF_DEMO_LINK: "true" 
+
+      # Default language for the application (default: fr_FR.UTF-8)
+      # Examples: "en_US.UTF-8", "nl_NL.UTF-8"
+      DEFAULT_LANGUAGE: "fr_FR.UTF-8"
+
+      # Activate PDF storage encryption? (GPG must be installed, default: false)
+      PDF_STORAGE_ENCRYPTION: "false" # Set to "true" to enable encryption
+    volumes:
+      # Persist PDF files outside the container (change the host path as needed)
+      - ./pdfdata:/data
+    restart: unless-stopped
+    # Optional: Set user and group IDs for file permission management
+    # user: "1000:1000"
+
+    # Optional: Healthcheck to monitor service health
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 1s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.${PROJECT}-dev.loadbalancer.server.port=80"
+      - "traefik.http.routers.${PROJECT}-secure.tls=true"
+      - "traefik.http.routers.${PROJECT}-secure.tls.certresolver=${CERTRESOLVER}"
+      - "traefik.http.routers.${PROJECT}-secure.rule=Host(`pdf.${HOSTINGDOMAIN}`)"
+      - "traefik.http.routers.${PROJECT}-secure.middlewares=cors, www-redirect, edwh-std-security"
+    networks: 
+      - broker       
+
+# Networks, external resources, or further customization can be added below.
+# For multi-host or production scenarios, consider using named networks or secrets.
+networks:
+  broker:
+    name: broker
+    external: true
+  backend:
+    name: ${PROJECT}_backend
